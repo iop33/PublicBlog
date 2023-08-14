@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Public Blog</title>
+</head>
+<body>
+<h1> <b>Public blog</b> </h1>
+<hr>
+<div id="div" class="glavniDiv">
+
+</div>
+
+</body>
+</html>
+<script>
+    fetch('api/articles',
+        { method: 'GET'}
+    )
+    .then(response => {
+        return response.json();
+    }).then( articles => {
+       const div = document.getElementById("div");
+       for (const article of articles) {
+           console.log("Uradjen fetch za: " + article.title + " , " + article.autor + " , " + article.text);
+           const articleH = document.createElement("h2");
+           articleH.innerText = article.title;
+           const articleA = document.createElement("h4");
+           articleA.innerText = article.autor;
+           const articleP = document.createElement("p");
+           const articleDate = document.createElement("p");
+           articleDate.style.color = "gray";
+           const date = new Date(article.datum);
+           //articleDate.innerText = date.getDate().toString() + "/" + date.getMonth() + "/" + date.getFullYear() + ".";
+           const date2 = new Date(article.datum);
+           const date1 = new Date();
+           const diffTime = Math.abs(date2 - date1);
+           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+           if (diffDays === 1){
+               articleDate.innerText = "today";
+           } else {
+               articleDate.innerText = diffDays + "days ago";
+           }           articleP.innerText = article.text;
+           div.appendChild(articleH);
+           div.appendChild(articleDate);
+           div.appendChild(articleA);
+           div.appendChild(articleP);
+           const articleBtn = document.createElement("button");
+           articleBtn.innerText = "Detaljnije";
+           articleBtn.onclick = function (){
+               console.log("Kliknut article: " + article.title);
+               onArticleBtnClicked(article);
+           }
+           div.appendChild(articleBtn);
+           const hrEl = document.createElement("hr");
+           div.appendChild(hrEl);
+       }
+       const newArticleBtn = document.createElement("button");
+       newArticleBtn.style.marginBottom = "64px";
+       newArticleBtn.onclick = function (){
+           addNewArticle();
+       }
+       const breakEl = document.createElement("br");
+       div.appendChild(breakEl);
+       div.appendChild(breakEl);
+       div.appendChild(breakEl);
+       div.appendChild(breakEl);
+       newArticleBtn.innerText = "Dodaj novu objavu";
+       newArticleBtn.style.marginTop = "64px";
+       div.appendChild(newArticleBtn);
+    });
+
+    function onArticleBtnClicked(article){
+        fetch('/api/articles/'+article.id, {
+            method: 'GET'
+        }).then( response => {
+            return response.json();
+        }).then( article => {
+            for (let element of document.getElementsByName("glavniDiv")){
+                element.style.display = "none";
+            }
+            const articleH = document.createElement("h2");
+            const articleA = document.createElement("h4");
+            const articleT = document.createElement("p");
+            const articleDate = document.createElement("p");
+            articleDate.style.color = "gray";
+            const date = new Date(article.datum);
+            articleDate.innerText = date.getDate().toString() + "/" + (date.getMonth()+1) + "/" + date.getFullYear();
+            articleH.innerText = article.title;
+            articleA.innerText = article.autor;
+            articleT.innerText = article.text;
+            const div = document.getElementById("div");
+            while (div.firstChild){
+                div.removeChild(div.firstChild);
+            }
+            div.appendChild(articleH);
+            div.appendChild(articleDate);
+            div.appendChild(articleA);
+            div.appendChild(articleT);
+            const komentarDiv = document.createElement("div");
+            const komentariHeading = document.createElement("h3");
+            komentariHeading.style.marginTop = "32px";
+            komentariHeading.innerText = "Komentari";
+            komentarDiv.appendChild(komentariHeading);
+            komentarDiv.style.marginTop = "24px";
+            const komentari = article.listaKomentara;
+            for (i=0;i<komentari.length;i++){
+                console.log(komentari[i]);
+                const komIme = document.createElement("h4");
+                const komTekst = document.createElement("p");
+                let element = komentari[i].split(':');
+                komIme.innerText = element[0];
+                komTekst.innerText = element[1];
+                komentarDiv.appendChild(komIme);
+                komentarDiv.appendChild(komTekst);
+                const breakEl = document.createElement("br");
+                const hrEl = document.createElement("hr");
+                komentarDiv.appendChild(hrEl);
+                komentarDiv.appendChild(breakEl);
+            }
+
+            div.appendChild(komentarDiv);
+            const noviKomDiv = document.createElement("div");
+            noviKomDiv.style.marginBottom = "64px";
+            const noviKomForm = document.createElement("form");
+            const imeInput = document.createElement("input");
+            const tekstInput = document.createElement("input");
+            const imeLabel= document.createElement("label");
+            const tekstLabel= document.createElement("label");
+            imeInput.id = "ime";
+            imeInput.style.marginRight = "16px";
+            tekstInput.id = "tekst";
+            imeLabel.htmlFor = "ime";
+            tekstLabel.htmlFor = "tekst";
+            imeLabel.innerText = "Ime";
+            tekstLabel.innerText = "Komentar";
+            noviKomForm.appendChild(imeLabel);
+            noviKomForm.appendChild(imeInput);
+            noviKomForm.appendChild(tekstLabel);
+            noviKomForm.appendChild(tekstInput);
+            const noviKomBtn = document.createElement("button");
+            noviKomBtn.style.marginLeft = "24px";
+            noviKomBtn.innerText = "Dodaj komentar";
+            noviKomBtn.onclick = function (e){
+                e.preventDefault();
+                if (imeInput.value == "" || tekstInput.value == ""){
+                    alert("Morate popuniti sva polja!");
+                    return;
+                }
+                let komString = imeInput.value + ":" + tekstInput.value;
+
+                const komIme = document.createElement("h4");
+                const komTekst = document.createElement("p");
+                komIme.innerText = imeInput.value;
+                komTekst.innerText = tekstInput.value;
+                komentarDiv.appendChild(komIme);
+                komentarDiv.appendChild(komTekst);
+                const breakEl = document.createElement("br");
+                komentarDiv.appendChild(breakEl);
+
+                komentari.push(komString);
+                article.listaKomentara = komentari;
+                fetch('/api/articles/'+article.id, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(article)
+                }).then( response => {
+                    return response.json();
+                }).then( a => {
+                    console.log(a);
+                    imeInput.value = "";
+                    tekstInput.value = "";
+
+                });
+            }
+            noviKomForm.appendChild(noviKomBtn);
+            noviKomDiv.appendChild(noviKomForm);
+            noviKomDiv.style.marginTop = "24px";
+            div.appendChild(noviKomDiv);
+        })
+    }
+    function addNewArticle(){
+        const div = document.getElementById("div");
+        while (div.firstChild){
+            div.removeChild(div.firstChild);
+        }
+        const form = document.createElement("form");
+        const autorInput = document.createElement("input");
+        const naslovInput = document.createElement("input");
+        const textInput = document.createElement("textarea");
+        autorInput.id = "autor";
+        naslovInput.id = "naslov";
+        textInput.id = "text";
+        const autorLabel = document.createElement("label");
+        const naslovLabel = document.createElement("label");
+        const textLabel = document.createElement("label");
+        autorLabel.innerText = "Autor";
+        naslovLabel.innerText = "Naslov";
+        textLabel.innerText = "Tekst";
+        autorLabel.htmlFor = "autor";
+        naslovLabel.htmlFor = "naslov";
+        textLabel.htmlFor = "text";
+       // const naslovGroup = document.createElement("f")
+        const breakEl = document.createElement("br");
+        form.appendChild(autorLabel);
+        form.appendChild(autorInput);
+        form.appendChild(breakEl);
+        form.appendChild(naslovLabel);
+        form.appendChild(naslovInput);
+        form.appendChild(breakEl);
+        form.appendChild(textLabel);
+        form.appendChild(textInput);
+        form.appendChild(breakEl);
+        const submitBtn = document.createElement("button");
+        submitBtn.onclick = function (e){
+            e.preventDefault();
+            //TODO: dodati validaciju za polja
+            if (naslovInput.value == "" || autorInput.value == "" || textInput == ""){
+                alert("Morate popuniti sva polja.");
+                return;
+            }
+            const article = {
+                title: naslovInput.value.toString(),
+                autor: autorInput.value.toString(),
+                text: textInput.value.toString()
+            };
+            fetch('/api/articles', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(article)
+            })
+                .then( response => {
+                    return response.json();
+                }).then( article => {
+                console.log(JSON.stringify(article));
+                window.location.reload();
+            })
+            console.log("Naslov: " + naslovInput.value + " , Autor: " + autorInput.value + " , Tekst: " + textInput.value);
+            naslovInput.value = "";
+            autorInput.value = "";
+            textInput.value = "";
+        }
+        submitBtn.innerText = "Dodaj objavu";
+        form.appendChild(submitBtn);
+        div.appendChild(form);
+    }
+
+
+</script>
